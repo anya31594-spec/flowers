@@ -16,7 +16,7 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: radial-gradient(circle at 50% 60%, #1d0f28 0%, #08030b 100%);
+      background: radial-gradient(circle at 50% 55%, #231032 0%, #08030b 100%);
     }
     canvas {
       display: block;
@@ -53,7 +53,7 @@
         this.baseScale = scale;
         this.scale = 0;
         this.targetScale = scale;
-        this.angle = angle; // кут нахилу квітки у букеті
+        this.angle = angle;
         this.bloomDelay = bloomDelay;
         this.bloomTimer = 0;
         this.swaySpeed = 0.012 + Math.random() * 0.008;
@@ -76,50 +76,46 @@
         const sway = Math.sin(t * this.swaySpeed + this.angle) * this.swayAmp;
         const currentAngle = this.angle + sway;
 
-        // Позиція квітки з урахуванням легкого погодування букета
         const headX = this.targetX + Math.sin(t * 0.01) * 8;
         const headY = this.targetY + Math.cos(t * 0.015) * 5;
 
-        // 1. Малювання вигнутого стебла від основи букета до квітки
+        // Стебло
         ctx.save();
         ctx.beginPath();
         ctx.moveTo(baseX, baseY);
-        // Точка вигину для природного вигляду стебла
-        let controlX = (baseX + headX) / 2 + Math.sin(this.angle) * 30;
+        let controlX = (baseX + headX) / 2 + Math.sin(this.angle) * 35;
         let controlY = (baseY + headY) / 2;
         ctx.quadraticCurveTo(controlX, controlY, headX, headY);
         
-        ctx.strokeStyle = '#234a1f';
-        ctx.lineWidth = Math.max(3, 7 * this.scale);
+        ctx.strokeStyle = '#285423';
+        ctx.lineWidth = Math.max(3.5, 7.5 * this.scale);
         ctx.lineCap = 'round';
         ctx.stroke();
 
-        // Маленьке листочок біля підніжжя бутона
+        // Листочок на стеблі
         ctx.save();
-        ctx.translate((baseX + headX) * 0.55, (baseY + headY) * 0.55);
-        ctx.rotate(currentAngle + 0.3);
-        ctx.fillStyle = '#183815';
+        ctx.translate((baseX + headX) * 0.52, (baseY + headY) * 0.52);
+        ctx.rotate(currentAngle + 0.35);
+        ctx.fillStyle = '#1c3d19';
         ctx.beginPath();
-        ctx.ellipse(0, 0, 18 * this.scale, 6 * this.scale, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, 22 * this.scale, 7 * this.scale, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
 
         ctx.restore();
 
-        // 2. Малювання квітки лілії
+        // Квітка
         ctx.save();
         ctx.translate(headX, headY);
         ctx.rotate(currentAngle);
         ctx.scale(this.scale, this.scale);
 
-        // 6 пелюсток
         const petals = 6;
         for (let i = 0; i < petals; i++) {
           ctx.save();
           let pAngle = (i * Math.PI * 2) / petals;
           ctx.rotate(pAngle);
 
-          // Градієнт пелюстки
           let grad = ctx.createLinearGradient(0, 0, 0, -85);
           grad.addColorStop(0, '#fce4ec');
           grad.addColorStop(0.35, '#f8bbd0');
@@ -135,7 +131,6 @@
           ctx.shadowBlur = 8;
           ctx.fill();
 
-          // Прожилка
           ctx.beginPath();
           ctx.moveTo(0, -5);
           ctx.lineTo(0, -65);
@@ -143,7 +138,6 @@
           ctx.lineWidth = 1.2;
           ctx.stroke();
 
-          // Рожеві цятки лілії
           ctx.fillStyle = 'rgba(173, 20, 87, 0.55)';
           for (let j = 0; j < 4; j++) {
             let rx = (Math.random() - 0.5) * 10;
@@ -156,7 +150,6 @@
           ctx.restore();
         }
 
-        // 6 тичинок із золотистим пилком
         const stamens = 6;
         for (let i = 0; i < stamens; i++) {
           ctx.save();
@@ -170,7 +163,6 @@
           ctx.lineWidth = 1.8;
           ctx.stroke();
 
-          // Пильовик
           ctx.beginPath();
           ctx.ellipse(10, -41, 4.5, 2.2, 0.8, 0, Math.PI * 2);
           ctx.fillStyle = '#fbc02d';
@@ -224,80 +216,129 @@
 
       const isMobile = width < 768;
       
-      // Основа букета (де зв'язані стебла)
       const baseX = width / 2;
-      const baseY = height * (isMobile ? 0.85 : 0.88);
+      const baseY = height * (isMobile ? 0.78 : 0.80);
 
-      // Радіус розкиду квітів у букеті
-      const radiusX = isMobile ? width * 0.38 : Math.min(width * 0.28, 260);
+      const radiusX = isMobile ? width * 0.38 : Math.min(width * 0.28, 270);
       const radiusY = isMobile ? height * 0.22 : 180;
-      const centerY = height * (isMobile ? 0.42 : 0.45);
+      const centerY = height * (isMobile ? 0.38 : 0.42);
 
-      const count = isMobile ? 15 : 23;
+      const count = isMobile ? 15 : 22;
 
       for (let i = 0; i < count; i++) {
-        // Рівномірний та природний розкид у формі півкола/овалу букета
-        let angle = (i / count) * Math.PI * 1.4 - Math.PI * 0.7; // від -126 до +126 градусів
+        let angle = (i / count) * Math.PI * 1.35 - Math.PI * 0.675;
         let distFactor = 0.3 + Math.random() * 0.7;
         
         let targetX = baseX + Math.sin(angle) * radiusX * distFactor;
-        let targetY = centerY - Math.cos(angle) * radiusY * distFactor + (Math.random() - 0.5) * 40;
+        let targetY = centerY - Math.cos(angle) * radiusY * distFactor + (Math.random() - 0.5) * 35;
         
-        let scale = (isMobile ? 0.5 : 0.65) + Math.random() * 0.25;
-        let tiltAngle = angle * 0.6; // нахил квітки вбік від центру
-        let delay = Math.floor(Math.random() * 25);
+        let scale = (isMobile ? 0.52 : 0.68) + Math.random() * 0.22;
+        let tiltAngle = angle * 0.6;
+        let delay = Math.floor(Math.random() * 20);
 
         flowers.push(new LilyFlower(targetX, targetY, scale, tiltAngle, delay));
       }
 
-      // Сортуємо: верхні квіти малюються першими, нижні/передні — поверх них
       flowers.sort((a, b) => a.targetY - b.targetY);
 
-      // Світлячки
       for (let i = 0; i < 35; i++) {
         particles.push(new Firefly());
       }
     }
 
-    // Малювання стрічки/банта, що зв'язує букет
-    function drawRibbon(x, y) {
+    // НОВИЙ КРАСИВИЙ НИЗ: Шовкова стрічка та ніжне листя
+    function drawElegantRibbon(x, y, t) {
       ctx.save();
       ctx.translate(x, y);
 
-      // Стрічка
-      ctx.fillStyle = '#e91e63';
-      ctx.shadowColor = 'rgba(0,0,0,0.3)';
-      ctx.shadowBlur = 6;
+      // Нижні стебла під бантиком
+      ctx.strokeStyle = '#1e4219';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      for (let i = -3; i <= 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * 4, 0);
+        ctx.lineTo(i * 8 + Math.sin(i) * 5, 60 + Math.abs(i) * 4);
+        ctx.stroke();
+      }
 
-      // Вузол
+      // Декоративні розкриті листочки біля вузла
+      ctx.fillStyle = '#2d5a27';
       ctx.beginPath();
-      ctx.ellipse(0, 0, 12, 8, 0, 0, Math.PI * 2);
+      ctx.ellipse(-25, 5, 25, 8, -0.4, 0, Math.PI * 2);
+      ctx.ellipse(25, 5, 25, 8, 0.4, 0, Math.PI * 2);
       ctx.fill();
 
-      // Бант (ліве та праве вушко)
+      // М'яке сяйво за бантом
+      let ribbonGlow = ctx.createRadialGradient(0, 0, 5, 0, 0, 45);
+      ribbonGlow.addColorStop(0, 'rgba(255, 64, 129, 0.4)');
+      ribbonGlow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = ribbonGlow;
+      ctx.beginPath();
+      ctx.arc(0, 0, 45, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Градієнт для вишуканої шовкової стрічки
+      let ribbonGrad = ctx.createLinearGradient(-35, -20, 35, 20);
+      ribbonGrad.addColorStop(0, '#ff4081');
+      ribbonGrad.addColorStop(0.5, '#f50057');
+      ribbonGrad.addColorStop(1, '#c2185b');
+
+      // Спадаючі кінці стрічок з легким коливанням від вітру
+      const wave1 = Math.sin(t * 0.03) * 6;
+      const wave2 = Math.cos(t * 0.025) * 6;
+
+      ctx.fillStyle = ribbonGrad;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+      ctx.shadowBlur = 10;
+
+      // Лівий кінець
+      ctx.beginPath();
+      ctx.moveTo(-6, 8);
+      ctx.bezierCurveTo(-20, 40, -35 + wave1, 70, -25 + wave1, 105);
+      ctx.lineTo(-12 + wave1, 102);
+      ctx.bezierCurveTo(-20 + wave1, 65, -8, 35, 0, 8);
+      ctx.fill();
+
+      // Правий кінець
+      ctx.beginPath();
+      ctx.moveTo(6, 8);
+      ctx.bezierCurveTo(20, 40, 35 + wave2, 75, 28 + wave2, 110);
+      ctx.lineTo(15 + wave2, 107);
+      ctx.bezierCurveTo(20 + wave2, 70, 8, 35, 0, 8);
+      ctx.fill();
+
+      // Вушка банта (ліве та праве)
+      // Ліва петля
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      ctx.bezierCurveTo(-20, -15, -30, 5, 0, 0);
+      ctx.bezierCurveTo(-20, -30, -55, -15, -42, 5);
+      ctx.bezierCurveTo(-30, 20, -10, 8, 0, 0);
       ctx.fill();
 
+      // Права петля
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      ctx.bezierCurveTo(20, -15, 30, 5, 0, 0);
+      ctx.bezierCurveTo(20, -30, 55, -15, 42, 5);
+      ctx.bezierCurveTo(30, 20, 10, 8, 0, 0);
       ctx.fill();
 
-      // Кінці стрічки, що звисають
+      // Внутрішні складки банта для об'єму
+      ctx.fillStyle = 'rgba(136, 14, 79, 0.45)';
       ctx.beginPath();
-      ctx.moveTo(-2, 2);
-      ctx.quadraticCurveTo(-15, 20, -22, 38);
-      ctx.lineTo(-12, 38);
-      ctx.quadraticCurveTo(-5, 20, 0, 2);
+      ctx.ellipse(-22, -4, 12, 5, -0.3, 0, Math.PI * 2);
+      ctx.ellipse(22, -4, 12, 5, 0.3, 0, Math.PI * 2);
       ctx.fill();
 
+      // Центральний вузол
+      let nodeGrad = ctx.createRadialGradient(-3, -3, 1, 0, 0, 14);
+      nodeGrad.addColorStop(0, '#ff80ab');
+      nodeGrad.addColorStop(0.6, '#f50057');
+      nodeGrad.addColorStop(1, '#880e4f');
+
+      ctx.fillStyle = nodeGrad;
       ctx.beginPath();
-      ctx.moveTo(2, 2);
-      ctx.quadraticCurveTo(15, 20, 22, 38);
-      ctx.lineTo(12, 38);
-      ctx.quadraticCurveTo(5, 20, 0, 2);
+      ctx.ellipse(0, 1, 12, 10, 0, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.restore();
@@ -320,14 +361,12 @@
       time += 1;
       ctx.clearRect(0, 0, width, height);
 
-      // Фонове м'яке сяйво
-      let bgGlow = ctx.createRadialGradient(width / 2, height * 0.5, 30, width / 2, height * 0.5, width * 0.7);
-      bgGlow.addColorStop(0, 'rgba(106, 27, 154, 0.22)');
+      let bgGlow = ctx.createRadialGradient(width / 2, height * 0.48, 30, width / 2, height * 0.48, width * 0.7);
+      bgGlow.addColorStop(0, 'rgba(123, 31, 162, 0.25)');
       bgGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.fillStyle = bgGlow;
       ctx.fillRect(0, 0, width, height);
 
-      // Світлячки
       particles.forEach(p => {
         p.update();
         p.draw();
@@ -335,18 +374,16 @@
 
       const isMobile = width < 768;
       const baseX = width / 2;
-      const baseY = height * (isMobile ? 0.85 : 0.88);
+      const baseY = height * (isMobile ? 0.78 : 0.80);
 
-      // Квіти та стебла букета
       flowers.forEach(f => {
         f.update();
         f.draw(time, baseX, baseY);
       });
 
-      // Стрічка на основі букета
-      drawRibbon(baseX, baseY);
+      // Малюємо красивий новий банчик
+      drawElegantRibbon(baseX, baseY, time);
 
-      // Сяючі іскри при дотику
       for (let i = touchParticles.length - 1; i >= 0; i--) {
         let p = touchParticles[i];
         p.x += p.vx;
