@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Магічний сад лілій</title>
+  <title>Flowers Bouquet</title>
   <style>
     * {
       box-sizing: border-box;
@@ -16,8 +16,7 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: radial-gradient(circle at center, #1b0c26 0%, #08030c 100%);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: radial-gradient(circle at 50% 60%, #1d0f28 0%, #08030b 100%);
     }
     canvas {
       display: block;
@@ -25,32 +24,14 @@
       height: 100%;
       touch-action: none;
     }
-    .hint {
-      position: absolute;
-      bottom: 25px;
-      left: 50%;
-      transform: translateX(-50%);
-      color: rgba(255, 230, 245, 0.75);
-      font-size: 14px;
-      letter-spacing: 1.2px;
-      text-align: center;
-      pointer-events: none;
-      animation: pulse 2s infinite ease-in-out;
-      text-shadow: 0 0 10px rgba(255, 182, 193, 0.5);
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 0.4; transform: translateX(-50%) scale(0.98); }
-      50% { opacity: 0.95; transform: translateX(-50%) scale(1.02); }
-    }
   </style>
 </head>
 <body>
 
-  <canvas id="lilyCanvas"></canvas>
-  <div class="hint">Торкніться екрана, щоб додати світла ✨</div>
+  <canvas id="bouquetCanvas"></canvas>
 
   <script>
-    const canvas = document.getElementById('lilyCanvas');
+    const canvas = document.getElementById('bouquetCanvas');
     const ctx = canvas.getContext('2d');
 
     let width, height;
@@ -62,123 +43,120 @@
     function resize() {
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
-      initScene();
+      initBouquet();
     }
 
-    class Lily {
-      constructor(x, y, scale, angleOffset, bloomSpeed) {
-        this.x = x;
-        this.y = y;
+    class LilyFlower {
+      constructor(targetX, targetY, scale, angle, bloomDelay) {
+        this.targetX = targetX;
+        this.targetY = targetY;
         this.baseScale = scale;
         this.scale = 0;
         this.targetScale = scale;
-        this.angleOffset = angleOffset;
-        this.bloomSpeed = bloomSpeed;
-        this.swaySpeed = 0.015 + Math.random() * 0.01;
-        this.swayAmp = 0.05 + Math.random() * 0.04;
-        this.stemPoints = [];
-        this.generateStem();
-      }
-
-      generateStem() {
-        this.stemPoints = [];
-        const segments = 12;
-        const startY = height + 20;
-        const endY = this.y;
-        
-        for (let i = 0; i <= segments; i++) {
-          let t = i / segments;
-          let currY = startY + (endY - startY) * t;
-          let currX = this.x + Math.sin(t * Math.PI + this.angleOffset) * 40 * (1 - t);
-          this.stemPoints.push({ x: currX, y: currY });
-        }
+        this.angle = angle; // кут нахилу квітки у букеті
+        this.bloomDelay = bloomDelay;
+        this.bloomTimer = 0;
+        this.swaySpeed = 0.012 + Math.random() * 0.008;
+        this.swayAmp = 0.03 + Math.random() * 0.02;
       }
 
       update() {
+        if (this.bloomTimer < this.bloomDelay) {
+          this.bloomTimer++;
+          return;
+        }
         if (this.scale < this.targetScale) {
-          this.scale += this.bloomSpeed;
+          this.scale += 0.012;
         }
       }
 
-      draw(t) {
-        const sway = Math.sin(t * this.swaySpeed + this.angleOffset) * this.swayAmp;
-        
-        // Стебло
+      draw(t, baseX, baseY) {
+        if (this.scale <= 0) return;
+
+        const sway = Math.sin(t * this.swaySpeed + this.angle) * this.swayAmp;
+        const currentAngle = this.angle + sway;
+
+        // Позиція квітки з урахуванням легкого погодування букета
+        const headX = this.targetX + Math.sin(t * 0.01) * 8;
+        const headY = this.targetY + Math.cos(t * 0.015) * 5;
+
+        // 1. Малювання вигнутого стебла від основи букета до квітки
         ctx.save();
         ctx.beginPath();
-        ctx.moveTo(this.stemPoints[0].x, this.stemPoints[0].y);
-        for (let i = 1; i < this.stemPoints.length; i++) {
-          let pt = this.stemPoints[i];
-          let offsetX = Math.sin(t * this.swaySpeed + i * 0.2) * (i * 1.5) * sway;
-          ctx.lineTo(pt.x + offsetX, pt.y);
-        }
-        ctx.strokeStyle = '#2d5a27';
-        ctx.lineWidth = 6 * this.scale;
+        ctx.moveTo(baseX, baseY);
+        // Точка вигину для природного вигляду стебла
+        let controlX = (baseX + headX) / 2 + Math.sin(this.angle) * 30;
+        let controlY = (baseY + headY) / 2;
+        ctx.quadraticCurveTo(controlX, controlY, headX, headY);
+        
+        ctx.strokeStyle = '#234a1f';
+        ctx.lineWidth = Math.max(3, 7 * this.scale);
         ctx.lineCap = 'round';
         ctx.stroke();
 
-        // Листя на стеблі
-        ctx.fillStyle = '#1e441b';
-        let leafPt = this.stemPoints[Math.floor(this.stemPoints.length * 0.5)];
+        // Маленьке листочок біля підніжжя бутона
         ctx.save();
-        ctx.translate(leafPt.x, leafPt.y);
-        ctx.rotate(0.5 + sway);
+        ctx.translate((baseX + headX) * 0.55, (baseY + headY) * 0.55);
+        ctx.rotate(currentAngle + 0.3);
+        ctx.fillStyle = '#183815';
         ctx.beginPath();
-        ctx.ellipse(20 * this.scale, 0, 25 * this.scale, 8 * this.scale, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, 18 * this.scale, 6 * this.scale, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
 
-        // Квітка
-        const topPt = this.stemPoints[this.stemPoints.length - 1];
-        ctx.translate(topPt.x + Math.sin(t * this.swaySpeed) * 15 * sway, topPt.y);
-        ctx.rotate(sway);
+        ctx.restore();
+
+        // 2. Малювання квітки лілії
+        ctx.save();
+        ctx.translate(headX, headY);
+        ctx.rotate(currentAngle);
         ctx.scale(this.scale, this.scale);
 
-        // Малювання пелюсток (6 пелюсток біло-рожевої лілії)
+        // 6 пелюсток
         const petals = 6;
         for (let i = 0; i < petals; i++) {
           ctx.save();
-          let angle = (i * Math.PI * 2) / petals;
-          ctx.rotate(angle);
+          let pAngle = (i * Math.PI * 2) / petals;
+          ctx.rotate(pAngle);
 
           // Градієнт пелюстки
-          let grad = ctx.createLinearGradient(0, 0, 0, -90);
+          let grad = ctx.createLinearGradient(0, 0, 0, -85);
           grad.addColorStop(0, '#fce4ec');
-          grad.addColorStop(0.3, '#f8bbd0');
-          grad.addColorStop(0.75, '#ffffff');
+          grad.addColorStop(0.35, '#f8bbd0');
+          grad.addColorStop(0.8, '#ffffff');
           grad.addColorStop(1, '#fff5f8');
 
           ctx.beginPath();
           ctx.moveTo(0, 0);
-          ctx.bezierCurveTo(-22, -40, -25, -75, 0, -100);
-          ctx.bezierCurveTo(25, -75, 22, -40, 0, 0);
+          ctx.bezierCurveTo(-20, -35, -22, -65, 0, -90);
+          ctx.bezierCurveTo(22, -65, 20, -35, 0, 0);
           ctx.fillStyle = grad;
-          ctx.shadowColor = 'rgba(233, 30, 99, 0.25)';
-          ctx.shadowBlur = 10;
+          ctx.shadowColor = 'rgba(233, 30, 99, 0.2)';
+          ctx.shadowBlur = 8;
           ctx.fill();
 
-          // Центральна прожилка
+          // Прожилка
           ctx.beginPath();
           ctx.moveTo(0, -5);
-          ctx.lineTo(0, -70);
-          ctx.strokeStyle = 'rgba(216, 27, 96, 0.4)';
-          ctx.lineWidth = 1.5;
+          ctx.lineTo(0, -65);
+          ctx.strokeStyle = 'rgba(216, 27, 96, 0.35)';
+          ctx.lineWidth = 1.2;
           ctx.stroke();
 
-          // Цятки лілії
-          ctx.fillStyle = 'rgba(173, 20, 87, 0.6)';
-          for (let j = 0; j < 5; j++) {
-            let rx = (Math.random() - 0.5) * 12;
-            let ry = -20 - Math.random() * 35;
+          // Рожеві цятки лілії
+          ctx.fillStyle = 'rgba(173, 20, 87, 0.55)';
+          for (let j = 0; j < 4; j++) {
+            let rx = (Math.random() - 0.5) * 10;
+            let ry = -18 - Math.random() * 30;
             ctx.beginPath();
-            ctx.arc(rx, ry, 1.2, 0, Math.PI * 2);
+            ctx.arc(rx, ry, 1, 0, Math.PI * 2);
             ctx.fill();
           }
 
           ctx.restore();
         }
 
-        // Тичинки та маточка
+        // 6 тичинок із золотистим пилком
         const stamens = 6;
         for (let i = 0; i < stamens; i++) {
           ctx.save();
@@ -187,17 +165,17 @@
 
           ctx.beginPath();
           ctx.moveTo(0, 0);
-          ctx.quadraticCurveTo(8, -25, 12, -45);
+          ctx.quadraticCurveTo(6, -22, 10, -40);
           ctx.strokeStyle = '#dcedc8';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 1.8;
           ctx.stroke();
 
-          // Пильовик (золотистий кінчик)
+          // Пильовик
           ctx.beginPath();
-          ctx.ellipse(12, -46, 5, 2.5, 0.8, 0, Math.PI * 2);
+          ctx.ellipse(10, -41, 4.5, 2.2, 0.8, 0, Math.PI * 2);
           ctx.fillStyle = '#fbc02d';
           ctx.shadowColor = '#fff59d';
-          ctx.shadowBlur = 8;
+          ctx.shadowBlur = 6;
           ctx.fill();
 
           ctx.restore();
@@ -207,18 +185,18 @@
       }
     }
 
-    class Particle {
+    class Firefly {
       constructor() {
         this.reset();
       }
       reset() {
         this.x = Math.random() * width;
         this.y = Math.random() * height;
-        this.size = 1 + Math.random() * 2.5;
-        this.speedY = -0.2 - Math.random() * 0.5;
-        this.speedX = (Math.random() - 0.5) * 0.3;
+        this.size = 1 + Math.random() * 2.2;
+        this.speedY = -0.15 - Math.random() * 0.4;
+        this.speedX = (Math.random() - 0.5) * 0.4;
         this.alpha = Math.random();
-        this.fade = 0.005 + Math.random() * 0.008;
+        this.fade = 0.006 + Math.random() * 0.008;
       }
       update() {
         this.y += this.speedY;
@@ -240,40 +218,98 @@
       }
     }
 
-    function initScene() {
+    function initBouquet() {
       flowers = [];
       particles = [];
 
-      // Кількість квітів адаптується під розмір екрана мобільного/ПК
       const isMobile = width < 768;
-      const flowerCount = isMobile ? 11 : 18;
+      
+      // Основа букета (де зв'язані стебла)
+      const baseX = width / 2;
+      const baseY = height * (isMobile ? 0.85 : 0.88);
 
-      for (let i = 0; i < flowerCount; i++) {
-        let x = (width / (flowerCount + 1)) * (i + 1) + (Math.random() - 0.5) * (isMobile ? 25 : 50);
-        let y = height * 0.35 + Math.random() * (height * 0.45);
-        let scale = (isMobile ? 0.55 : 0.75) + Math.random() * 0.3;
-        let angleOffset = Math.random() * Math.PI * 2;
-        let bloomSpeed = 0.01 + Math.random() * 0.015;
+      // Радіус розкиду квітів у букеті
+      const radiusX = isMobile ? width * 0.38 : Math.min(width * 0.28, 260);
+      const radiusY = isMobile ? height * 0.22 : 180;
+      const centerY = height * (isMobile ? 0.42 : 0.45);
+
+      const count = isMobile ? 15 : 23;
+
+      for (let i = 0; i < count; i++) {
+        // Рівномірний та природний розкид у формі півкола/овалу букета
+        let angle = (i / count) * Math.PI * 1.4 - Math.PI * 0.7; // від -126 до +126 градусів
+        let distFactor = 0.3 + Math.random() * 0.7;
         
-        flowers.push(new Lily(x, y, scale, angleOffset, bloomSpeed));
+        let targetX = baseX + Math.sin(angle) * radiusX * distFactor;
+        let targetY = centerY - Math.cos(angle) * radiusY * distFactor + (Math.random() - 0.5) * 40;
+        
+        let scale = (isMobile ? 0.5 : 0.65) + Math.random() * 0.25;
+        let tiltAngle = angle * 0.6; // нахил квітки вбік від центру
+        let delay = Math.floor(Math.random() * 25);
+
+        flowers.push(new LilyFlower(targetX, targetY, scale, tiltAngle, delay));
       }
 
-      // Сортуємо за висотою для гарного накладання
-      flowers.sort((a, b) => a.y - b.y);
+      // Сортуємо: верхні квіти малюються першими, нижні/передні — поверх них
+      flowers.sort((a, b) => a.targetY - b.targetY);
 
       // Світлячки
-      for (let i = 0; i < 40; i++) {
-        particles.push(new Particle());
+      for (let i = 0; i < 35; i++) {
+        particles.push(new Firefly());
       }
     }
 
+    // Малювання стрічки/банта, що зв'язує букет
+    function drawRibbon(x, y) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // Стрічка
+      ctx.fillStyle = '#e91e63';
+      ctx.shadowColor = 'rgba(0,0,0,0.3)';
+      ctx.shadowBlur = 6;
+
+      // Вузол
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 12, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Бант (ліве та праве вушко)
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(-20, -15, -30, 5, 0, 0);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(20, -15, 30, 5, 0, 0);
+      ctx.fill();
+
+      // Кінці стрічки, що звисають
+      ctx.beginPath();
+      ctx.moveTo(-2, 2);
+      ctx.quadraticCurveTo(-15, 20, -22, 38);
+      ctx.lineTo(-12, 38);
+      ctx.quadraticCurveTo(-5, 20, 0, 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(2, 2);
+      ctx.quadraticCurveTo(15, 20, 22, 38);
+      ctx.lineTo(12, 38);
+      ctx.quadraticCurveTo(5, 20, 0, 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
     function addTouchSparks(x, y) {
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 9; i++) {
         touchParticles.push({
           x: x,
           y: y,
-          vx: (Math.random() - 0.5) * 4,
-          vy: (Math.random() - 0.5) * 4,
+          vx: (Math.random() - 0.5) * 4.5,
+          vy: (Math.random() - 0.5) * 4.5,
           size: 2 + Math.random() * 3,
           life: 1
         });
@@ -284,26 +320,33 @@
       time += 1;
       ctx.clearRect(0, 0, width, height);
 
-      // Фон-сяйво
-      let bgGlow = ctx.createRadialGradient(width / 2, height * 0.7, 50, width / 2, height * 0.7, width * 0.8);
-      bgGlow.addColorStop(0, 'rgba(74, 20, 140, 0.25)');
+      // Фонове м'яке сяйво
+      let bgGlow = ctx.createRadialGradient(width / 2, height * 0.5, 30, width / 2, height * 0.5, width * 0.7);
+      bgGlow.addColorStop(0, 'rgba(106, 27, 154, 0.22)');
       bgGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.fillStyle = bgGlow;
       ctx.fillRect(0, 0, width, height);
 
-      // Частинки
+      // Світлячки
       particles.forEach(p => {
         p.update();
         p.draw();
       });
 
-      // Квіти
+      const isMobile = width < 768;
+      const baseX = width / 2;
+      const baseY = height * (isMobile ? 0.85 : 0.88);
+
+      // Квіти та стебла букета
       flowers.forEach(f => {
         f.update();
-        f.draw(time);
+        f.draw(time, baseX, baseY);
       });
 
-      // Інтерактивні спалахи при дотику
+      // Стрічка на основі букета
+      drawRibbon(baseX, baseY);
+
+      // Сяючі іскри при дотику
       for (let i = touchParticles.length - 1; i >= 0; i--) {
         let p = touchParticles[i];
         p.x += p.vx;
@@ -327,7 +370,6 @@
       requestAnimationFrame(animate);
     }
 
-    // Події для смартфона та мишки
     window.addEventListener('resize', resize);
     window.addEventListener('touchstart', (e) => {
       for (let touch of e.touches) {
@@ -338,7 +380,6 @@
       addTouchSparks(e.clientX, e.clientY);
     });
 
-    // Старт
     resize();
     animate();
   </script>
