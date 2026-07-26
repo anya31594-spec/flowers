@@ -1,4 +1,259 @@
-function addTouchSparks(x, y) {
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Flowers</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #08020f;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    let width, height;
+    let flowers = [];
+    let particles = [];
+    let touchParticles = [];
+    let time = 0;
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      initScene();
+    }
+
+    class Flower {
+      constructor(x, targetHeight, scale, delay) {
+        this.x = x;
+        this.targetHeight = targetHeight;
+        this.scale = scale;
+        this.delay = delay;
+        
+        this.growProgress = 0; // від 0 до 1 (ріст стебла)
+        this.bloomProgress = 0; // від 0 до 1 (розпускання квітки)
+        
+        this.swaySpeed = 0.015 + Math.random() * 0.01;
+        this.swayOffset = Math.random() * Math.PI * 2;
+        this.curveFactor = (Math.random() - 0.5) * 60;
+
+        // Колірна гама пелюсток (рожево-лілові градієнти)
+        const colorSchemes = [
+          { inner: '#ffb3d9', mid: '#f72585', outer: '#7209b7' },
+          { inner: '#ffe5ec', mid: '#ff6496', outer: '#b5179e' },
+          { inner: '#f8edeb', mid: '#ff70a6', outer: '#9e0059' }
+        ];
+        this.colors = colorSchemes[Math.floor(Math.random() * colorSchemes.length)];
+      }
+
+      update() {
+        if (this.delay > 0) {
+          this.delay--;
+          return;
+        }
+
+        // 1. Поступовий ріст стебла
+        if (this.growProgress < 1) {
+          this.growProgress += 0.012;
+        } else if (this.bloomProgress < 1) {
+          // 2. Розпускання квітки після виростання
+          this.bloomProgress += 0.018;
+        }
+      }
+
+      draw(t) {
+        if (this.growProgress <= 0) return;
+
+        const sway = Math.sin(t * this.swaySpeed + this.swayOffset) * 12;
+        const currentStemHeight = this.targetHeight * this.growProgress;
+
+        const startX = this.x;
+        const startY = height + 10;
+        const endX = this.x + sway + this.curveFactor * (this.growProgress * 0.5);
+        const endY = height - currentStemHeight;
+
+        const controlX = this.x + this.curveFactor;
+        const controlY = height - currentStemHeight * 0.5;
+
+        // 1. Малювання стебла
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.quadraticCurveTo(controlX, controlY, endX, endY);
+        ctx.strokeStyle = '#2d5a27';
+        ctx.lineWidth = Math.max(2, 6 * this.scale * this.growProgress);
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        // Листочки на стеблі
+        if (this.growProgress > 0.4) {
+          const leafT = 0.5;
+          const leafX = (1 - leafT) * (1 - leafT) * startX + 2 * (1 - leafT) * leafT * controlX + leafT * leafT * endX;
+          const leafY = (1 - leafT) * (1 - leafT) * startY + 2 * (1 - leafT) * leafT * controlY + leafT * leafT * endY;
+
+          ctx.save();
+          ctx.translate(leafX, leafY);
+          ctx.rotate(0.4 + Math.sin(t * 0.02) * 0.1);
+          ctx.fillStyle = '#1e441b';
+          ctx.beginPath();
+          ctx.ellipse(12 * this.scale, 0, 18 * this.scale, 6 * this.scale, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        ctx.restore();
+
+        // 2. Малювання квітки (якщо вона розпускається)
+        if (this.bloomProgress > 0) {
+          ctx.save();
+          ctx.translate(endX, endY);
+          ctx.rotate(sway * 0.03);
+          
+          const flowerScale = this.scale * Math.sin(this.bloomProgress * Math.PI / 2);
+          ctx.scale(flowerScale, flowerScale);
+
+          // 6 витончених пелюсток
+          const petals = 6;
+          for (let i = 0; i < petals; i++) {
+            ctx.save();
+            const angle = (i * Math.PI * 2) / petals;
+            ctx.rotate(angle);
+
+            // Градієнт пелюстки
+            let grad = ctx.createLinearGradient(0, 0, 0, -75);
+            grad.addColorStop(0, this.colors.inner);
+            grad.addColorStop(0.4, this.colors.mid);
+            grad.addColorStop(1, this.colors.outer);
+
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(-18, -30, -20, -55, 0, -75);
+            ctx.bezierCurveTo(20, -55, 18, -30, 0, 0);
+            ctx.fillStyle = grad;
+            ctx.shadowColor = 'rgba(247, 37, 133, 0.3)';
+            ctx.shadowBlur = 10;
+            ctx.fill();
+
+            // Прожилка в центрі пелюстки
+            ctx.beginPath();
+            ctx.moveTo(0, -5);
+            ctx.lineTo(0, -55);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.restore();
+          }
+
+          // Серединка квітки з тичинками
+          ctx.beginPath();
+          ctx.arc(0, 0, 10, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffb703';
+          ctx.shadowColor = '#ffe600';
+          ctx.shadowBlur = 12;
+          ctx.fill();
+
+          // Тичинки
+          for (let i = 0; i < 8; i++) {
+            ctx.save();
+            ctx.rotate((i * Math.PI * 2) / 8);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -18);
+            ctx.strokeStyle = '#ffe600';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(0, -19, 2.5, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.restore();
+          }
+
+          ctx.restore();
+        }
+      }
+    }
+
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.size = 1 + Math.random() * 2.5;
+        this.speedY = -0.2 - Math.random() * 0.4;
+        this.speedX = (Math.random() - 0.5) * 0.3;
+        this.alpha = Math.random();
+        this.fade = 0.004 + Math.random() * 0.006;
+      }
+      update() {
+        this.y += this.speedY;
+        this.x += this.speedX;
+        this.alpha += this.fade;
+        if (this.alpha >= 1 || this.alpha <= 0) this.fade = -this.fade;
+        if (this.y < -10) this.reset();
+      }
+      draw() {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.alpha);
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffb703';
+        ctx.shadowColor = '#ffe600';
+        ctx.shadowBlur = 6;
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function initScene() {
+      flowers = [];
+      particles = [];
+
+      const isMobile = width < 768;
+      const flowerCount = isMobile ? 12 : 20;
+
+      for (let i = 0; i < flowerCount; i++) {
+        let x = (width / (flowerCount + 1)) * (i + 1) + (Math.random() - 0.5) * (isMobile ? 20 : 40);
+        let targetHeight = height * (0.35 + Math.random() * 0.4);
+        let scale = (isMobile ? 0.6 : 0.8) + Math.random() * 0.35;
+        let delay = Math.floor(Math.random() * 30);
+
+        flowers.push(new Flower(x, targetHeight, scale, delay));
+      }
+
+      for (let i = 0; i < 45; i++) {
+        particles.push(new Particle());
+      }
+    }
+
+    function addTouchSparks(x, y) {
       for (let i = 0; i < 10; i++) {
         touchParticles.push({
           x: x,
